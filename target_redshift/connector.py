@@ -310,11 +310,13 @@ class RedshiftConnector(SQLConnector):
             raise NotImplementedError(msg)
 
         _, schema_name, table_name = self.parse_full_table_name(full_table_name)
-        column_add_ddl = self.get_column_add_ddl(
-            table_name=table_name,
-            schema_name=schema_name,
-            column_name=column_name,
-            column_type=sql_type,
+        column_add_ddl = str(
+            self.get_column_add_ddl(
+                table_name=table_name,
+                schema_name=schema_name,
+                column_name=column_name,
+                column_type=sql_type,
+            )
         )
         cursor.execute(column_add_ddl)
 
@@ -399,10 +401,12 @@ class RedshiftConnector(SQLConnector):
             )
             raise NotImplementedError(msg)
 
-        alter_column_ddl = self.get_column_alter_ddl(
-            table_name=full_table_name,
-            column_name=column_name,
-            column_type=compatible_sql_type,
+        alter_column_ddl = str(
+            self.get_column_alter_ddl(
+                table_name=full_table_name,
+                column_name=column_name,
+                column_type=compatible_sql_type,
+            )
         )
         cursor.execute(alter_column_ddl)
 
