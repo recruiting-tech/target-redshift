@@ -267,8 +267,6 @@ class RedshiftConnector(SQLConnector):
             cursor: a database cursor.
             column_object: a SQLAlchemy column. optional.
         """
-        _, schema_name, table_name = self.parse_full_table_name(full_table_name)
-
         column_name = column_name.lower().replace(" ", "_")
         column_exists = column_object is not None or self.column_exists(full_table_name, column_name)
 
@@ -279,7 +277,6 @@ class RedshiftConnector(SQLConnector):
                 full_table_name=full_table_name,
                 column_name=column_name,
                 sql_type=sql_type,
-                schema_name=cast(str, schema_name),
                 cursor=cursor,
             )
             return
