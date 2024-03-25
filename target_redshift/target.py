@@ -72,8 +72,8 @@ class TargetRedshift(SQLTarget):
         ),
         th.Property(
             "port",
-            th.IntegerType,
-            default=5432,
+            th.StringType,
+            default="5432",
             description=(
                 "The port on which redshift is awaiting connection. "
                 + "Note if sqlalchemy_url is set this will be ignored."
