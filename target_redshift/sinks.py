@@ -57,9 +57,9 @@ class RedshiftSink(SQLSink):
             self.append_only = True
         else:
             self.append_only = False
-        if self.schema_name:
-            self.connector.prepare_schema(self.schema_name)
         with self.connector._connect_cursor() as cursor:
+            if self.schema_name:
+                self.connector.prepare_schema(self.schema_name, cursor=cursor)
             self.connector.prepare_table(
                 full_table_name=self.full_table_name,
                 schema=self.schema,

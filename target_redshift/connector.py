@@ -42,14 +42,23 @@ class RedshiftConnector(SQLConnector):
     allow_merge_upsert: bool = True  # Whether MERGE UPSERT is supported.
     allow_temp_tables: bool = True  # Whether temp tables are supported.
 
-    def create_schema(self, schema_name: str) -> None:
+    def prepare_schema(self, schema_name: str, cursor: Cursor) -> None:
+        """Create the target database schema.
+
+        Args:
+            schema_name: The target schema name.
+        """
+        schema_exists = self.schema_exists(schema_name)
+        if not schema_exists:
+            self.create_schema(schema_name, cursor=cursor)
+
+    def create_schema(self, schema_name: str, cursor: Cursor) -> None:
         """Create target schema.
 
         Args:
             schema_name: The target schema to create.
         """
-        with self._connect_cursor() as cursor:
-            cursor.execute(str(CreateSchema(schema_name)))
+        cursor.execute(str(CreateSchema(schema_name)))
 
     @contextmanager
     def _connect_cursor(self) -> t.Iterator[Cursor]:
