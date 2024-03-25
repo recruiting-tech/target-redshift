@@ -90,7 +90,7 @@ class TargetRedshift(SQLTarget):
             description=("Password used to authenticate. Note if sqlalchemy_url is set this will be ignored."),
         ),
         th.Property(
-            "database",
+            "dbname",
             th.StringType,
             description=("Database name. Note if sqlalchemy_url is set this will be ignored."),
         ),
@@ -117,7 +117,7 @@ class TargetRedshift(SQLTarget):
             ),
         ),
         th.Property(
-            "aws_copy_role_arn",
+            "aws_redshift_copy_role_arn",
             th.StringType,
             secret=True,  # Flag config as protected.
             required=True,
@@ -130,9 +130,10 @@ class TargetRedshift(SQLTarget):
             description="S3 bucket to save staging files before using COPY command",
         ),
         th.Property(
-            "s3_path",
+            "s3_key_prefix",
             th.StringType,
-            description="S3 path to save staging files before using COPY command",
+            description="S3 key prefix to save staging files before using COPY command",
+            default="",
         ),
         th.Property(
             "remove_s3_files",
@@ -141,7 +142,7 @@ class TargetRedshift(SQLTarget):
             description="If you want to remove staging files in S3",
         ),
         th.Property(
-            "temp_file_path", th.StringType, default="temp", description="Where you want to store your temp data files."
+            "temp_dir", th.StringType, default="temp", description="Where you want to store your temp data files."
         ),
         th.Property(
             "default_target_schema",

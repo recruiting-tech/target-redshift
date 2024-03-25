@@ -58,7 +58,7 @@ class RedshiftConnector(SQLConnector):
             password=self.config["password"],
             host=self.config["host"],
             port=self.config["port"],
-            database=self.config["database"],
+            database=self.config["dbname"],
         ) as connection:
             connection.autocommit = True
             with connection.cursor() as cursor:
@@ -194,105 +194,6 @@ class RedshiftConnector(SQLConnector):
         if _jsonschema_type_check(jsonschema_type, ("object", "array")):
             return SUPER()
 
-        return VARCHAR()
-
-    # def to_sql_type(self, jsonschema_type: dict) -> TypeEngine:  # type: ignore[override]
-    #     """Return a JSON Schema representation of the provided type.
-
-    #     By default will call `typing.to_sql_type()`.
-
-    #     Developers may override this method to accept additional input argument types,
-    #     to support non-standard types, or to provide custom typing logic.
-    #     If overriding this method, developers should call the default implementation
-    #     from the base class for all unhandled cases.
-
-    #     Args:
-    #         jsonschema_type: The JSON Schema representation of the source type.
-
-    #     Returns:
-    #         The SQLAlchemy type representation of the data type.
-    #     """
-    #     json_type_array = []
-
-    #     if jsonschema_type.get("type", False):
-    #         if isinstance(jsonschema_type["type"], str):
-    #             json_type_array.append(jsonschema_type)
-    #         elif isinstance(jsonschema_type["type"], list):
-    #             for entry in jsonschema_type["type"]:
-    #                 json_type_dict = {"type": entry}
-    #                 if jsonschema_type.get("format", False):
-    #                     json_type_dict["format"] = jsonschema_type["format"]
-    #                 if encoding := jsonschema_type.get("contentEncoding", False):
-    #                     json_type_dict["contentEncoding"] = encoding
-    #                 json_type_array.append(json_type_dict)
-    #         else:
-    #             msg = "Invalid format for jsonschema type: not str or list."
-    #             raise RuntimeError(msg)
-    #     elif jsonschema_type.get("anyOf", False):
-    #         json_type_array.extend(iter(jsonschema_type["anyOf"]))
-    #     else:
-    #         msg = "Neither type nor anyOf are present. Unable to determine type. " "Defaulting to string."
-    #         return NOTYPE()
-    #     sql_type_array = []
-    #     for json_type in json_type_array:
-    #         picked_type = self.pick_individual_type(jsonschema_type=json_type)
-    #         if picked_type is not None:
-    #             sql_type_array.append(picked_type)
-
-    #     return RedshiftConnector.pick_best_sql_type(sql_type_array=sql_type_array)
-
-    def pick_individual_type(self, jsonschema_type: dict):
-        """Select the correct sql type assuming jsonschema_type has only a single type.
-
-        Args:
-            jsonschema_type: A jsonschema_type array containing only a single type.
-
-        Returns:
-            An instance of the appropriate SQL type class based on jsonschema_type.
-        """
-        if "null" in jsonschema_type["type"]:
-            return None
-        if "integer" in jsonschema_type["type"]:
-            return BIGINT()
-        if "object" in jsonschema_type["type"] or "array" in jsonschema_type["type"]:
-            return SUPER()
-
-        # string formats
-        if jsonschema_type.get("format") == "date-time":
-            return TIMESTAMP()
-        individual_type = th.to_sql_type(jsonschema_type)
-        if isinstance(individual_type, VARCHAR):
-            return VARCHAR()
-        return individual_type
-
-    @staticmethod
-    def pick_best_sql_type(sql_type_array: list):
-        """Select the best SQL type from an array of instances of SQL type classes.
-
-        Args:
-            sql_type_array: The array of instances of SQL type classes.
-
-        Returns:
-            An instance of the best SQL type class based on defined precedence order.
-        """
-        precedence_order = [
-            SUPER,
-            VARCHAR,
-            TIMESTAMP,
-            DATETIME,
-            DATE,
-            TIME,
-            DECIMAL,
-            BIGINT,
-            INTEGER,
-            BOOLEAN,
-            NOTYPE,
-        ]
-
-        for sql_type in precedence_order:
-            for obj in sql_type_array:
-                if isinstance(obj, sql_type):
-                    return obj
         return VARCHAR()
 
     def create_empty_table(  # type: ignore[override]
@@ -571,7 +472,7 @@ class RedshiftConnector(SQLConnector):
                 password=config["password"],
                 host=config["host"],
                 port=config["port"],
-                database=config["database"],
+                database=config["dbname"],
                 query=self.get_sqlalchemy_query(config),
             )
             return cast(str, sqlalchemy_url)

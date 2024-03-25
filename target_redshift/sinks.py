@@ -106,8 +106,8 @@ class RedshiftSink(SQLSink):
             )
             # Insert into temp table
             self.file = f"{self.stream_name}-{self.temp_table_name}.csv"
-            self.path = f"{self.config['temp_file_path']}/{self.file}"
-            self.object = f"{self.config['s3_path']}/{self.file}" if self.config.get("s3_path") else self.file
+            self.path = os.path.join(self.config["temp_dir"], self.file)
+            self.object = os.path.join(self.config["s3_key_prefix"], self.file)
             self.bulk_insert_records(
                 table=temp_table,
                 schema=self.schema,
@@ -226,7 +226,7 @@ class RedshiftSink(SQLSink):
             self.logger.error(e)
 
     def copy_to_redshift(self, table: sqlalchemy.Table, cursor: Cursor):
-        copy_credentials = f"IAM_ROLE '{self.config['aws_copy_role_arn']}'"
+        copy_credentials = f"IAM_ROLE '{self.config['aws_redshift_copy_role_arn']}'"
 
         # Step 3: Generate copy options - Override defaults from config.json if defined
         copy_options = self.config.get(
