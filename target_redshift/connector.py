@@ -269,13 +269,14 @@ class RedshiftConnector(SQLConnector):
         """
         _, schema_name, table_name = self.parse_full_table_name(full_table_name)
 
+        column_name = column_name.lower().replace(" ", "_")
         column_exists = column_object is not None or self.column_exists(full_table_name, column_name)
 
         if not column_exists:
             self._create_empty_column(
                 # We should migrate every function to use Table
                 # instead of having to know what the function wants
-                table_name=table_name,
+                full_table_name=full_table_name,
                 column_name=column_name,
                 sql_type=sql_type,
                 schema_name=cast(str, schema_name),
@@ -284,18 +285,15 @@ class RedshiftConnector(SQLConnector):
             return
 
         self._adapt_column_type(
-            schema_name=cast(str, schema_name),
-            table_name=table_name,
+            full_table_name=full_table_name,
             column_name=column_name,
             sql_type=sql_type,
             cursor=cursor,
-            column_object=column_object,
         )
 
-    def _create_empty_column(  # type: ignore[override]
+    def _create_empty_column(
         self,
-        schema_name: str,
-        table_name: str,
+        full_table_name: str,
         column_name: str,
         sql_type: TypeEngine,
         cursor: Cursor,
@@ -303,11 +301,9 @@ class RedshiftConnector(SQLConnector):
         """Create a new column.
 
         Args:
-            schema_name: The schema name.
-            table_name: The table name.
+            full_table_name: The target table name.
             column_name: The name of the new column.
             sql_type: SQLAlchemy type engine to be used in creating the new column.
-            cursor: The database cursor.
 
         Raises:
             NotImplementedError: if adding columns is not supported.
@@ -316,13 +312,12 @@ class RedshiftConnector(SQLConnector):
             msg = "Adding columns is not supported."
             raise NotImplementedError(msg)
 
-        column_add_ddl = str(
-            self.get_column_add_ddl(
-                schema_name=schema_name,
-                table_name=table_name,
-                column_name=column_name,
-                column_type=sql_type,
-            )
+        _, schema_name, table_name = self.parse_full_table_name(full_table_name)
+        column_add_ddl = self.get_column_add_ddl(
+            table_name=table_name,
+            schema_name=schema_name,
+            column_name=column_name,
+            column_type=sql_type,
         )
         cursor.execute(column_add_ddl)
 
@@ -356,35 +351,27 @@ class RedshiftConnector(SQLConnector):
             },
         )
 
-    def _adapt_column_type(  # type: ignore[override]
+    def _adapt_column_type(
         self,
-        schema_name: str,
-        table_name: str,
+        full_table_name: str,
         column_name: str,
         sql_type: TypeEngine,
         cursor: Cursor,
-        column_object: Column | None,
     ) -> None:
         """Adapt table column type to support the new JSON schema type.
 
         Args:
-            schema_name: The schema name.
-            table_name: The table name.
+            full_table_name: The target table name.
             column_name: The target column name.
             sql_type: The new SQLAlchemy type.
-            cursor: The database cursor.
-            column_object: The existing column object.
 
         Raises:
             NotImplementedError: if altering columns is not supported.
         """
-        current_type: TypeEngine
-        if column_object is not None:
-            current_type = t.cast(TypeEngine, column_object.type)
-        else:
-            current_type = self._get_column_type(
-                schema_name=schema_name, table_name=table_name, column_name=column_name
-            )
+        current_type: TypeEngine = self._get_column_type(
+            full_table_name,
+            column_name,
+        )
 
         # remove collation if present and save it
         current_type_collation = self.remove_collation(current_type)
@@ -410,18 +397,15 @@ class RedshiftConnector(SQLConnector):
         if not self.allow_column_alter:
             msg = (
                 "Altering columns is not supported. Could not convert column "
-                f"'{schema_name}.{table_name}.{column_name}' from '{current_type}' to "
+                f"'{full_table_name}.{column_name}' from '{current_type}' to "
                 f"'{compatible_sql_type}'."
             )
             raise NotImplementedError(msg)
 
-        alter_column_ddl = str(
-            self.get_column_alter_ddl(
-                schema_name=schema_name,
-                table_name=table_name,
-                column_name=column_name,
-                column_type=compatible_sql_type,
-            )
+        alter_column_ddl = self.get_column_alter_ddl(
+            table_name=full_table_name,
+            column_name=column_name,
+            column_type=compatible_sql_type,
         )
         cursor.execute(alter_column_ddl)
 
