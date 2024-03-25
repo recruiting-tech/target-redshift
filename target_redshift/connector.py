@@ -60,9 +60,9 @@ class RedshiftConnector(SQLConnector):
             port=self.config["port"],
             database=self.config["dbname"],
         ) as connection:
-            connection.autocommit = True
             with connection.cursor() as cursor:
                 yield cursor
+            connection.commit()
 
     def prepare_table(  # type: ignore[override]
         self,
