@@ -80,6 +80,13 @@ class TargetRedshift(SQLTarget):
             ),
         ),
         th.Property(
+            "enable_iam_authentication",
+            th.BooleanType,
+            description=(
+                "If true, use temporary credentials (https://docs.aws.amazon.com/redshift/latest/mgmt/generating-iam-credentials-cli-api.html). Note if sqlalchemy_url is set this will be ignored."
+            ),
+        ),
+        th.Property(
             "user",
             th.StringType,
             description=("User name used to authenticate. Note if sqlalchemy_url is set this will be ignored."),

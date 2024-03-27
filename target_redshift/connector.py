@@ -6,6 +6,7 @@ from typing import cast
 
 import simplejson
 from contextlib import contextmanager
+import boto3
 
 from singer_sdk.typing import _jsonschema_type_check
 from singer_sdk import typing as th
@@ -62,9 +63,10 @@ class RedshiftConnector(SQLConnector):
 
     @contextmanager
     def _connect_cursor(self) -> t.Iterator[Cursor]:
+        user, password = self.get_credentials()
         with redshift_connector.connect(
-            user=self.config["user"],
-            password=self.config["password"],
+            user=user,
+            password=password,
             host=self.config["host"],
             port=self.config["port"],
             database=self.config["dbname"],
@@ -473,12 +475,12 @@ class RedshiftConnector(SQLConnector):
         """
         if config.get("sqlalchemy_url"):
             return cast(str, config["sqlalchemy_url"])
-
         else:
+            user, password = self.get_credentials()
             sqlalchemy_url = URL.create(
                 drivername=config["dialect+driver"],
-                username=config["user"],
-                password=config["password"],
+                username=user,
+                password=password,
                 host=config["host"],
                 port=config["port"],
                 database=config["dbname"],
@@ -502,3 +504,24 @@ class RedshiftConnector(SQLConnector):
             ssl_mode = config["ssl_mode"]
             query.update({"sslmode": ssl_mode})
         return query
+
+    def get_credentials(self) -> tuple[str, str]:
+        """Use boto3 to get temporary cluster credentials
+
+        Returns
+        -------
+        tuple[str, str]
+            username and password
+        """
+        if self.config.get("enable_iam_authentication"):
+            client = boto3.client("redshift", region_name="eu-west-1")
+            response = client.get_cluster_credentials(
+                DbUser=self.config["user"],
+                DbName=self.config["dbname"],
+                ClusterIdentifier=self.config["cluster_identifier"],
+                DurationSeconds=3600,
+                AutoCreate=False,
+            )
+            return response["DbUser"], response["DbPassword"]
+        else:
+            return self.config["user"], self.config["password"]
