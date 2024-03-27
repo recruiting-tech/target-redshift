@@ -6,39 +6,18 @@ environments:
 - name: test
 plugins:
   extractors:
-  - name: tap-intercom
-    namespace: tap_intercom
-    pip_url: git+https://github.com/TicketSwap/tap-intercom.git
-    executable: tap-intercom
-    load_schema: meltano_test
-    capabilities:
-    - state
-    - catalog
-    - discover
-    config:
-      start_date: '2024-03-25T12:00:00Z'
-      access_token: $TAP_INTERCOM_ACCESS_TOKEN
-      stream_maps:
-        conversation_parts:
-          has_body: str(body != "")
-          body: __NULL__
-    select:
-    - conversations.*
-    - conversation_parts.*
-
-  - name: tap-delighted--nps
-    inherit_from: tap-delighted
+  - name: tap-aircall
     variant: ticketswap
-    pip_url: git+https://github.com/TicketSwap/tap-delighted.git
+    pip_url: git+https://github.com/TicketSwap/tap-aircall.git
     config:
-      api_key: $TAP_DELIGHTED_API_KEY_NPS
-      start_date: '2024-03-22'
+      start_date: '2024-03-27T00:00:00Z'
       stream_maps:
-        survey_responses:
-          __alias__: survey_responses_nps
-    load_schema: delighted_test
+        calls:
+          is_assist_you: str(raw_digits == "+31 20 532 2440")
+          raw_digits: __NULL__
+    load_schema: aircall_test_2
     select:
-    - survey_responses.*
+    - calls.*
 
   loaders:
   - name: target-redshift

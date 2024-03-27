@@ -89,14 +89,8 @@ class RedshiftSink(SQLSink):
         # If duplicates are merged, these can be tracked via
         # :meth:`~singer_sdk.Sink.tally_duplicate_merged()`.
         with self.connector._connect_cursor() as cursor:
-            # Check structure of table
-            table: sqlalchemy.Table = self.connector.prepare_table(
-                full_table_name=self.full_table_name,
-                schema=self.schema,
-                primary_keys=self.key_properties,
-                as_temp_table=False,
-                cursor=cursor,
-            )
+            # Get target table
+            table: sqlalchemy.Table = self.connector.get_table(full_table_name=self.full_table_name)
             # Create a temp table (Creates from the table above)
             temp_table: sqlalchemy.Table = self.connector.copy_table_structure(
                 full_table_name=self.temp_table_name,

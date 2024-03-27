@@ -97,9 +97,23 @@ class RedshiftConnector(SQLConnector):
         """
         _, schema_name, table_name = self.parse_full_table_name(full_table_name)
         meta = MetaData(schema=schema_name)
-        table: Table
-        if not self.table_exists(full_table_name=full_table_name):
-            table = self.create_empty_table(
+
+        if self.table_exists(full_table_name=full_table_name):
+            table: Table = self.get_table(full_table_name=full_table_name)
+            columns = {column.name: column for column in table.columns}
+            for property_name, property_def in schema["properties"].items():
+                column_object = None
+                if property_name in columns:
+                    column_object = columns[property_name]
+                self.prepare_column(
+                    full_table_name=table.fullname,
+                    column_name=property_name,
+                    sql_type=self.to_sql_type(property_def),
+                    cursor=cursor,
+                    column_object=column_object,
+                )
+        else:
+            table: Table = self.create_empty_table(
                 table_name=table_name,
                 meta=meta,
                 schema=schema,
@@ -108,27 +122,29 @@ class RedshiftConnector(SQLConnector):
                 as_temp_table=as_temp_table,
                 cursor=cursor,
             )
-            return table
 
-        with self._connect() as connection, connection.begin():
-            meta.reflect(connection, only=[table_name])
-        table = meta.tables[full_table_name]  # So we don't mess up the casing of the Table reference
+        return table
 
-        columns = self.get_table_columns(full_table_name=full_table_name)
+    def get_table(
+        self,
+        full_table_name: str,
+    ) -> Table:
+        """Return a table object.
 
-        for property_name, property_def in schema["properties"].items():
-            column_object = None
-            if property_name in columns:
-                column_object = columns[property_name]
-            self.prepare_column(
-                full_table_name=table.fullname,
-                column_name=property_name,
-                sql_type=self.to_sql_type(property_def),
-                cursor=cursor,
-                column_object=column_object,
-            )
+        Args:
+            full_table_name: Fully qualified table name.
+            column_names: A list of column names to filter to.
 
-        return meta.tables[full_table_name]
+        Returns:
+            A table object with column list.
+        """
+        _, schema_name, table_name = self.parse_full_table_name(full_table_name)
+        meta = MetaData(schema=schema_name)
+        return Table(
+            table_name,
+            meta,
+            autoload_with=self._engine,
+        )
 
     def copy_table_structure(
         self,
@@ -149,7 +165,6 @@ class RedshiftConnector(SQLConnector):
             The new table object.
         """
         _, schema_name, table_name = self.parse_full_table_name(full_table_name)
-        # schema_name = "meltano_test"
         meta = MetaData(schema=schema_name)
         new_table: Table
         columns = []
@@ -487,28 +502,3 @@ class RedshiftConnector(SQLConnector):
             ssl_mode = config["ssl_mode"]
             query.update({"sslmode": ssl_mode})
         return query
-
-
-class NOTYPE(TypeDecorator):
-    """Type to use when none is provided in the schema."""
-
-    impl = TEXT
-    cache_ok = True
-
-    def process_bind_param(self, value, dialect):
-        """Return value as is unless it is dict or list.
-
-        Used internally by SQL Alchemy. Should not be used directly.
-        """
-        if value is not None and isinstance(value, (dict, list)):
-            value = simplejson.dumps(value, use_decimal=True)
-        return value
-
-    @property
-    def python_type(self):
-        """Return the Python type for this column."""
-        return object
-
-    def as_generic(self, *args: t.Any, **kwargs: t.Any):
-        """Return the generic type for this column."""
-        return VARCHAR()
