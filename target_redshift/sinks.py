@@ -12,6 +12,17 @@ from .connector import RedshiftConnector
 from typing import List, Any, Iterable, Dict, Optional
 from botocore.exceptions import ClientError
 
+from singer_sdk.helpers._compat import (
+    date_fromisoformat,
+    datetime_fromisoformat,
+    time_fromisoformat,
+)
+from singer_sdk.helpers._typing import (
+    DatetimeErrorTreatmentEnum,
+    get_datelike_property_type,
+    handle_invalid_timestamp_in_record,
+)
+
 from target_redshift.connector import RedshiftConnector
 from redshift_connector import Cursor
 
@@ -242,8 +253,53 @@ class RedshiftSink(SQLSink):
         """
         cursor.execute(copy_sql)
 
+    def _parse_timestamps_in_record(
+        self,
+        record: dict,
+        schema: dict,
+        treatment: DatetimeErrorTreatmentEnum,
+    ) -> None:
+        """Parse strings to datetime.datetime values, repairing or erroring on failure.
+
+        Attempts to parse every field that is of type date/datetime/time. If its value
+        is out of range, repair logic will be driven by the `treatment` input arg:
+        MAX, NULL, or ERROR.
+
+        Args:
+            record: Individual record in the stream.
+            schema: TODO
+            treatment: TODO
+        """
+        for key, value in record.items():
+            if key not in schema["properties"]:
+                if value is not None:
+                    self.logger.warning("No schema for record field '%s'", key)
+                continue
+            datelike_type = get_datelike_property_type(schema["properties"][key])
+            if datelike_type:
+                date_val = value
+                try:
+                    if value is not None:
+                        if datelike_type == "time":
+                            date_val = time_fromisoformat(date_val)
+                        elif datelike_type == "date":
+                            date_val = date_fromisoformat(date_val)
+                        else:
+                            date_val = datetime_fromisoformat(date_val)
+                except ValueError as ex:
+                    date_val = handle_invalid_timestamp_in_record(
+                        record,
+                        [key],
+                        date_val,
+                        datelike_type,
+                        ex,
+                        treatment,
+                        self.logger,
+                    )
+                record[key] = date_val
+
     def clean_resources(self):
-        os.remove(self.path)
+        # os.remove(self.path)
         if self.config["remove_s3_files"]:
             try:
                 _ = self.s3_client.delete_object(Bucket=self.config["s3_bucket"], Key=self.object)
