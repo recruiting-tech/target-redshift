@@ -3,6 +3,7 @@
 plugins/
 /temp
 /.vscode
+meltano.yml
 
 # Ignore meltano internal cache and sqlite systemdb
 
