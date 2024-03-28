@@ -39,12 +39,21 @@ class TargetRedshift(SQLTarget):
         )
         # There's a few ways to do this in JSON Schema but it is schema draft dependent.
         # https://stackoverflow.com/questions/38717933/jsonschema-attribute-conditionally-required # noqa: E501
-        assert (self.config.get("sqlalchemy_url") is not None) or (
-            self.config.get("host") is not None
-            and self.config.get("port") is not None
-            and self.config.get("user") is not None
-            and self.config.get("password") is not None
-            and self.config.get("dialect+driver") is not None
+        assert (
+            (self.config.get("sqlalchemy_url") is not None)
+            or (
+                self.config.get("host") is not None
+                and self.config.get("port") is not None
+                and self.config.get("user") is not None
+                and self.config.get("password") is not None
+            )
+            or (
+                self.config.get("host") is not None
+                and self.config.get("port") is not None
+                and self.config.get("user") is not None
+                and self.config.get("enable_iam_authentication") is not None
+                and self.config.get("cluster_identifier") is not None
+            )
         ), ("Need either the sqlalchemy_url to be set or host, port, user," + "password, and dialect+driver to be set")
 
         # If sqlalchemy_url is not being used and ssl_enable is on, ssl_mode must have
@@ -84,6 +93,13 @@ class TargetRedshift(SQLTarget):
             th.BooleanType,
             description=(
                 "If true, use temporary credentials (https://docs.aws.amazon.com/redshift/latest/mgmt/generating-iam-credentials-cli-api.html). Note if sqlalchemy_url is set this will be ignored."
+            ),
+        ),
+        th.Property(
+            "cluster_identifier",
+            th.StringType,
+            description=(
+                "Redshift cluster identifier. Note if sqlalchemy_url is set or enable_iam_authentication is false this will be ignored."
             ),
         ),
         th.Property(
