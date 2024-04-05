@@ -203,9 +203,7 @@ class RedshiftConnector(SQLConnector):
                     return TIME()
                 if datelike_type == "date":
                     return DATE()
-
-            maxlength = jsonschema_type.get("maxLength")
-            return VARCHAR(maxlength)
+            return VARCHAR(self.default_varchar_length)
 
         if _jsonschema_type_check(jsonschema_type, ("integer",)):
             return BIGINT()
@@ -217,7 +215,8 @@ class RedshiftConnector(SQLConnector):
         if _jsonschema_type_check(jsonschema_type, ("object", "array")):
             return SUPER()
 
-        return VARCHAR(self.default_varchar_length)
+        return VARCHAR(self.default_varchar_length
+                       )
 
     def create_empty_table(  # type: ignore[override]
         self,
