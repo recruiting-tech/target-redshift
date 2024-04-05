@@ -255,7 +255,6 @@ class RedshiftConnector(SQLConnector):
             raise RuntimeError(f"Schema for table_name: '{table_name}'" f"does not define properties: {schema}")
 
         for property_name, property_jsonschema in properties.items():
-            self.logger.info(f"{property_name}: {property_jsonschema}")
             is_primary_key = property_name in primary_keys
             columns.append(
                 Column(
