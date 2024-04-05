@@ -22,12 +22,8 @@ from sqlalchemy.types import (
     DATE,
     DATETIME,
     DECIMAL,
-    INTEGER,
-    TEXT,
     TIME,
-    TIMESTAMP,
     VARCHAR,
-    TypeDecorator,
 )
 from sqlalchemy.schema import CreateTable, DropTable, CreateSchema
 from sqlalchemy.types import TypeEngine
@@ -42,6 +38,7 @@ class RedshiftConnector(SQLConnector):
     allow_column_alter: bool = False  # Whether altering column types is supported.
     allow_merge_upsert: bool = True  # Whether MERGE UPSERT is supported.
     allow_temp_tables: bool = True  # Whether temp tables are supported.
+    default_varchar_length = 10000
 
     def prepare_schema(self, schema_name: str, cursor: Cursor) -> None:
         """Create the target database schema.
@@ -220,7 +217,7 @@ class RedshiftConnector(SQLConnector):
         if _jsonschema_type_check(jsonschema_type, ("object", "array")):
             return SUPER()
 
-        return VARCHAR()
+        return VARCHAR(self.default_varchar_length)
 
     def create_empty_table(  # type: ignore[override]
         self,
@@ -258,6 +255,7 @@ class RedshiftConnector(SQLConnector):
             raise RuntimeError(f"Schema for table_name: '{table_name}'" f"does not define properties: {schema}")
 
         for property_name, property_jsonschema in properties.items():
+            self.logger.info(f"{property_name}: {property_jsonschema}")
             is_primary_key = property_name in primary_keys
             columns.append(
                 Column(

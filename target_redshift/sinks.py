@@ -155,10 +155,10 @@ class RedshiftSink(SQLSink):
         Returns:
             True if table exists, False if not, None if unsure or undetectable.
         """
-        self.write_csv(records)
-        self.logger.info(f'writing {len(records)} records to s3://{self.config["s3_bucket"]}/{self.object}')
-        self.copy_to_s3()
-        self.copy_to_redshift(table, cursor)
+        # self.write_csv(records)
+        # self.logger.info(f'writing {len(records)} records to s3://{self.config["s3_bucket"]}/{self.object}')
+        # self.copy_to_s3()
+        # self.copy_to_redshift(table, cursor)
         return True
 
     def upsert(
