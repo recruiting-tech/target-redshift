@@ -16,7 +16,7 @@ from redshift_connector import Cursor
 import redshift_connector
 
 from sqlalchemy.engine.url import URL
-from sqlalchemy_redshift.dialect import SUPER, BIGINT, VARCHAR
+from sqlalchemy_redshift.dialect import SUPER, BIGINT, VARCHAR, DOUBLE_PRECISION
 from sqlalchemy.types import (
     BOOLEAN,
     DATE,
@@ -208,15 +208,14 @@ class RedshiftConnector(SQLConnector):
         if _jsonschema_type_check(jsonschema_type, ("integer",)):
             return BIGINT()
         if _jsonschema_type_check(jsonschema_type, ("number",)):
-            return DECIMAL()
+            return DOUBLE_PRECISION()
         if _jsonschema_type_check(jsonschema_type, ("boolean",)):
             return BOOLEAN()
 
         if _jsonschema_type_check(jsonschema_type, ("object", "array")):
             return SUPER()
 
-        return VARCHAR(self.default_varchar_length
-                       )
+        return VARCHAR(self.default_varchar_length)
 
     def create_empty_table(  # type: ignore[override]
         self,
@@ -521,3 +520,4 @@ class RedshiftConnector(SQLConnector):
             return response["DbUser"], response["DbPassword"]
         else:
             return self.config["user"], self.config["password"]
+
