@@ -1726,12 +1726,12 @@ cffi = {version = "*", markers = "implementation_name == \"pypy\""}
 
 [[package]]
 name = "redshift-connector"
-version = "2.1.0"
+version = "2.1.1"
 description = "Redshift interface library"
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "redshift_connector-2.1.0-py3-none-any.whl", hash = "sha256:3073bd47853ea2bc3d03ce984b9d73cb7c9623a5eaa3a68de52887a58bc29be1"},
+    {file = "redshift_connector-2.1.1-py3-none-any.whl", hash = "sha256:540c4674859bb2e9668abbcfb64d346cff9d11ed2707533efd28717dbff523c0"},
 ]
 
 [package.dependencies]
@@ -2353,4 +2353,4 @@ s3 = ["fs-s3fs"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "3ce2195341ea6fdc9e8660e18325ee8f176cf4c55a9635b59a1910a82b278ecf"
+content-hash = "ca09665e030b1ad2d8e2b9e5e10189f60f097f3c0e81b93c3b8f4cda6aa05e38"
