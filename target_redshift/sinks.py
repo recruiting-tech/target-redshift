@@ -6,6 +6,7 @@ import uuid
 from singer_sdk.sinks import SQLSink
 import os
 import csv
+import json
 import sqlalchemy
 import boto3
 from .connector import RedshiftConnector
@@ -209,15 +210,14 @@ class RedshiftSink(SQLSink):
             os.mkdir(self.config["temp_dir"])
         except:
             pass
+        object_keys = [key for key, value in self.schema["properties"].items() if "object" in value["type"] or "array" in value["type"]]
         records = [
-            {key: str(value).replace("'", '"').replace("None", "") for key, value in record.items()}
+            {key: (json.dumps(value).replace("None", "") if key in object_keys else value) for key, value in record.items()}
             for record in records
         ]
         with open(self.path, "w", encoding="utf-8", newline="") as fp:
             writer = csv.DictWriter(
                 fp,
-                quotechar="'",
-                quoting=csv.QUOTE_MINIMAL,
                 fieldnames=keys,
                 extrasaction="ignore",
                 dialect="excel",
@@ -249,7 +249,7 @@ class RedshiftSink(SQLSink):
             FROM 's3://{self.config["s3_bucket"]}/{self.object}' 
             {copy_credentials}
             {copy_options}
-            CSV QUOTE AS ''''
+            CSV
         """
         cursor.execute(copy_sql)
 
