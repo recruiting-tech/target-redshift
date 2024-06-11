@@ -238,7 +238,7 @@ class RedshiftSink(SQLSink):
             "copy_options",
             """
             EMPTYASNULL BLANKSASNULL TRIMBLANKS TRUNCATECOLUMNS
-            DATEFORMAT 'auto'
+            DATEFORMAT 'auto' TIMEFORMAT 'auto'
             COMPUPDATE OFF STATUPDATE OFF
         """,
         )
