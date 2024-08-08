@@ -71,6 +71,8 @@ class TargetRedshift(SQLTarget):
             "`activate_version` configuration to False."
         )
 
+        assert self.config.get("s3_bucket") is not None
+
     name = "target-redshift"
 
     config_jsonschema = th.PropertiesList(
@@ -151,6 +153,14 @@ class TargetRedshift(SQLTarget):
             th.StringType,
             required=True,
             description="S3 bucket to save staging files before using COPY command",
+        ),
+        th.Property(
+            "s3_region",
+            th.StringType,
+            description=(
+                "AWS region for S3 bucket. If not specified, region will be detected by boto config resolution."
+                + "See https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html"
+            ),
         ),
         th.Property(
             "s3_key_prefix",

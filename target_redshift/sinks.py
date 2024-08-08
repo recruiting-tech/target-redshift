@@ -32,13 +32,18 @@ class RedshiftSink(SQLSink):
     """Redshift target sink class."""
 
     connector_class = RedshiftConnector
-    s3_client = boto3.client("s3", region_name="eu-west-1")
     MAX_SIZE_DEFAULT = 50000
 
     def __init__(self, *args, **kwargs):
         """Initialize SQL Sink. See super class for more details."""
         super().__init__(*args, **kwargs)
         self.temp_table_name = self.generate_temp_table_name()
+
+        region = self.config.get("s3_region")
+        if region is None:
+            self.s3_client = boto3.client("s3")
+        else:
+            self.s3_client = boto3.client("s3", region_name=region)
 
     @property
     def schema_name(self) -> str | None:
