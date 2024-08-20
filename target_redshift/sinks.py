@@ -6,7 +6,7 @@ import uuid
 from singer_sdk.sinks import SQLSink
 import os
 import csv
-import json
+import simplejson as json
 import sqlalchemy
 import boto3
 from .connector import RedshiftConnector

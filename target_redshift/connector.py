@@ -4,7 +4,6 @@ from __future__ import annotations
 import typing as t
 from typing import cast
 
-import simplejson
 from contextlib import contextmanager
 import boto3
 
