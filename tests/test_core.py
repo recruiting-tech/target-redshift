@@ -9,7 +9,6 @@ from singer_sdk.testing import get_target_test_class
 
 from target_redshift.target import TargetRedshift
 
-# TODO: Initialize minimal target config
 SAMPLE_CONFIG: dict[str, t.Any] = {}
 
 
@@ -34,6 +33,3 @@ class TestTargetRedshift(StandardTargetTests):  # type: ignore[misc, valid-type]
         https://github.com/meltano/sdk/tree/main/tests/samples
         """
         return "resource"
-
-
-# TODO: Create additional tests as appropriate for your target.
