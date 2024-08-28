@@ -76,6 +76,8 @@ class RedshiftConnector(SQLConnector):
             host=self.config["host"],
             port=self.config["port"],
             database=self.config["dbname"],
+            ssl=self.config["ssl_enable"],
+            sslmode=self.config["ssl_mode"],
         ) as connection:
             with connection.cursor() as cursor:
                 yield cursor
