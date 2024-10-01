@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import typing as t
 
 from singer_sdk.testing import get_target_test_class
@@ -25,24 +26,8 @@ from singer_sdk.testing.target_tests import (
 
 from target_redshift.target import TargetRedshift
 
-redshift_config: dict[str, t.Any] = {
-    "aws_redshift_copy_role_arn": "arn:aws:iam::573569180693:role/AllowRedshiftToAccessS3Bucket",
-    "flattening_enabled": True,
-    "flattening_max_depth": 5,
-    "dbname": "reporting",
-    "s3_bucket": "ticketswap-redshift-reporting",
-    "s3_key_prefix": "meltano-staging/",
-    "temp_dir": ".meltano/temp",
-    "user": "tobias",
-    "enable_iam_authentication": True,
-    "cluster_identifier": "reporting-cluster",
-    "host": "localhost",
-    "port": "5001",
-    "default_target_schema": "target_redshift_test",
-    "add_record_metadata": True,
-    "ssl_mode": "prefer",
-    "ssl_enable": True,
-}
+with open(".secrets/config.json") as f:
+    redshift_config: dict[str, t.Any] = json.load(f)
 
 target_tests = TestSuite(
     kind="target",
