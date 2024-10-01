@@ -26,7 +26,7 @@ from singer_sdk.testing.target_tests import (
 
 from target_redshift.target import TargetRedshift
 
-with open(".secrets/config.json") as f:
+with open(".secrets/config.json") as f:  # noqa: PTH123
     redshift_config: dict[str, t.Any] = json.load(f)
 
 target_tests = TestSuite(
