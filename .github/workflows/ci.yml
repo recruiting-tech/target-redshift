@@ -1,10 +1,6 @@
 name: Test target-redshift
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs: {}
 
