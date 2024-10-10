@@ -144,17 +144,17 @@ lxml = ["lxml"]
 
 [[package]]
 name = "boto3"
-version = "1.35.30"
+version = "1.35.37"
 description = "The AWS SDK for Python"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "boto3-1.35.30-py3-none-any.whl", hash = "sha256:d89c3459db89c5408e83219ab849ffd0146bc4285e75cdc67c6e45d390a12df2"},
-    {file = "boto3-1.35.30.tar.gz", hash = "sha256:d2851aec8e9dc6937977acbe9a5124ecc31b3ad5f50a10cd9ae52636da3f52fa"},
+    {file = "boto3-1.35.37-py3-none-any.whl", hash = "sha256:385ca77bf8ea4ab2d97f6e2435bdb29f77d9301e2f7ac796c2f465753c2adf3c"},
+    {file = "boto3-1.35.37.tar.gz", hash = "sha256:470d981583885859fed2fd1c185eeb01cc03e60272d499bafe41b12625b158c8"},
 ]
 
 [package.dependencies]
-botocore = ">=1.35.30,<1.36.0"
+botocore = ">=1.35.37,<1.36.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.10.0,<0.11.0"
 
@@ -163,13 +163,13 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.35.30"
+version = "1.35.37"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "botocore-1.35.30-py3-none-any.whl", hash = "sha256:3bb9f9dde001608671ea74681ac3cec06bbbb10cba8cb8c1387a25e843075ce0"},
-    {file = "botocore-1.35.30.tar.gz", hash = "sha256:ab5350e8a50e48d371fa2d517d65c29a40c43788cb9a15387f93eac5a23df0fd"},
+    {file = "botocore-1.35.37-py3-none-any.whl", hash = "sha256:64f965d4ba7adb8d79ce044c3aef7356e05dd74753cf7e9115b80f477845d920"},
+    {file = "botocore-1.35.37.tar.gz", hash = "sha256:b2b4d29bafd95b698344f2f0577bb67064adbf1735d8a0e3c7473daa59c23ba6"},
 ]
 
 [package.dependencies]
@@ -181,7 +181,7 @@ urllib3 = [
 ]
 
 [package.extras]
-crt = ["awscrt (==0.21.5)"]
+crt = ["awscrt (==0.22.0)"]
 
 [[package]]
 name = "certifi"
@@ -2216,4 +2216,4 @@ s3 = ["fs-s3fs"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "cf8da82b19f48ecf9fef0bae8e75a859dec403a807bc4506c4c9ae3221e16dcb"
+content-hash = "c9e8e9be05b76c48c5be4c7854df16723f2c305a855947093a1900b613f76fd0"
