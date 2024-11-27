@@ -76,6 +76,7 @@ class TargetRedshift(SQLTarget):
                 "If true, use temporary credentials "
                 "(https://docs.aws.amazon.com/redshift/latest/mgmt/generating-iam-credentials-cli-api.html)."
             ),
+            title="Enable IAM Authentication",
         ),
         th.Property(
             "cluster_identifier",
@@ -107,6 +108,7 @@ class TargetRedshift(SQLTarget):
             description=(
                 "Database name. Note if sqlalchemy_url is set this will be ignored."
             ),
+            title="Database Name",
         ),
         th.Property(
             "aws_redshift_copy_role_arn",
@@ -114,6 +116,7 @@ class TargetRedshift(SQLTarget):
             secret=True,  # Flag config as protected.
             required=True,
             description="Redshift copy role arn to use for the COPY command from s3",
+            title="AWS Redshift Copy Role ARN",
         ),
         th.Property(
             "s3_bucket",
