@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "target-redshift"
-version = "0.1.0"
+version = "0.2.1"
 description = "`target-redshift` is a Singer target for Redshift, built with the Meltano Singer SDK."
 readme = "README.md"
 authors = ["Tobias Cadee <tobias.cadee@ticketswap.com>"]
