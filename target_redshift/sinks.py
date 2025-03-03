@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Iterable
 
 import boto3
 import simplejson as json
+import smart_open
 import sqlalchemy
 from botocore.exceptions import ClientError
 from singer_sdk.helpers._compat import (
@@ -123,10 +124,6 @@ class RedshiftSink(SQLSink):
                 cursor=cursor,
             )
             # Insert into temp table
-            self.file = f"{self.stream_name}-{self.temp_table_name}.csv"
-            self.path = Path(self.config["temp_dir"]) / self.file
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            self.object = f'{self.config["s3_key_prefix"]}/{self.file}'
             self.bulk_insert_records(
                 table=temp_table,
                 records=context["records"],
@@ -142,6 +139,25 @@ class RedshiftSink(SQLSink):
             )
             # clean_resources
         self.clean_resources()
+
+    def s3_uri(self) -> str:
+        """Return the s3 uri.
+
+        Returns:
+            The target s3 uri.
+        """
+        return f's3://{self.config["s3_bucket"]}/{self.s3_key()}'
+
+    def s3_key(self) -> str:
+        """Return the s3 key.
+
+        Returns:
+            The target s3 key.
+        """
+        p = Path(self.config["s3_key_prefix"]) / Path(
+            f"{self.stream_name}-{self.temp_table_name}.csv"
+        )
+        return str(p)
 
     def bulk_insert_records(  # type: ignore[override]
         self,
@@ -165,10 +181,7 @@ class RedshiftSink(SQLSink):
         Returns:
             True if table exists, False if not, None if unsure or undetectable.
         """
-        self.write_csv(records)
-        msg = f'writing {len(records)} records to s3://{self.config["s3_bucket"]}/{self.object}'
-        self.logger.info(msg)
-        self.copy_to_s3()
+        self.write_to_s3(records)
         self.copy_to_redshift(table, cursor)
         return True
 
@@ -178,7 +191,7 @@ class RedshiftSink(SQLSink):
         to_table: sqlalchemy.Table,
         join_keys: list[str],
         cursor: Cursor,
-    ) -> int | None:
+    ) -> None:
         """Merge upsert data from one table to another.
 
         Args:
@@ -215,7 +228,7 @@ class RedshiftSink(SQLSink):
                 """  # noqa: S608
         cursor.execute(sql)
 
-    def write_csv(self, records: list[dict]) -> None:
+    def format_records_as_csv(self, records: Iterable[dict[str, Any]]) -> list[dict]:
         """Write records to a local csv file.
 
         Parameters
@@ -235,13 +248,12 @@ class RedshiftSink(SQLSink):
         if "properties" not in self.schema:
             msg = "Stream's schema has no properties defined."
             raise ValueError(msg)
-        keys: list[str] = list(self.schema["properties"].keys())
         object_keys = [
             key
             for key, value in self.schema["properties"].items()
             if "object" in value["type"] or "array" in value["type"]
         ]
-        records = [
+        return [
             {
                 key: (
                     json.dumps(value).replace("None", "")
@@ -252,7 +264,16 @@ class RedshiftSink(SQLSink):
             }
             for record in records
         ]
-        with self.path.open("w", encoding="utf-8", newline="") as fp:
+
+    def write_to_s3(self, records: Iterable[dict[str, Any]]) -> None:
+        """Write the csv file to s3."""
+        records = self.format_records_as_csv(records)
+        keys: list[str] = list(self.schema["properties"].keys())
+
+        msg = f"writing {len(records)} records to {self.s3_uri()}"
+        self.logger.info(msg)
+
+        with smart_open.open(self.s3_uri(), "w") as fp:
             writer = csv.DictWriter(
                 fp,
                 fieldnames=keys,
@@ -260,15 +281,6 @@ class RedshiftSink(SQLSink):
                 dialect="excel",
             )
             writer.writerows(records)
-
-    def copy_to_s3(self) -> None:
-        """Copy the csv file to s3."""
-        try:
-            _ = self.s3_client.upload_file(
-                self.path, self.config["s3_bucket"], self.object
-            )
-        except ClientError:
-            self.logger.exception()
 
     def copy_to_redshift(self, table: sqlalchemy.Table, cursor: Cursor) -> None:
         """Copy the s3 csv file to redshift."""
@@ -287,7 +299,7 @@ class RedshiftSink(SQLSink):
         # Step 4: Load into the stage table
         copy_sql = f"""
             COPY {self.connector.quote(str(table))} ({columns})
-            FROM 's3://{self.config["s3_bucket"]}/{self.object}'
+            FROM '{self.s3_uri()}'
             {copy_credentials}
             {copy_options}
             CSV
@@ -341,11 +353,10 @@ class RedshiftSink(SQLSink):
 
     def clean_resources(self) -> None:
         """Remove local and s3 resources."""
-        Path.unlink(self.path)
         if self.config["remove_s3_files"]:
             try:
                 _ = self.s3_client.delete_object(
-                    Bucket=self.config["s3_bucket"], Key=self.object
+                    Bucket=self.config["s3_bucket"], Key=self.s3_key()
                 )
             except ClientError:
                 self.logger.exception()

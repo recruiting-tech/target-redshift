@@ -98,7 +98,7 @@ class RedshiftConnector(SQLConnector):
                 yield cursor
             connection.commit()
 
-    def prepare_table(  # type: ignore[override]  # noqa: D417
+    def prepare_table(  # type: ignore[override]  # noqa: D417, PLR0913
         self,
         full_table_name: str,
         schema: dict,
@@ -121,8 +121,10 @@ class RedshiftConnector(SQLConnector):
         _, schema_name, table_name = self.parse_full_table_name(full_table_name)
         meta = MetaData(schema=schema_name)
 
+        table: Table
+
         if self.table_exists(full_table_name=full_table_name):
-            table: Table = self.get_table(full_table_name=full_table_name)
+            table = self.get_table(full_table_name=full_table_name)
             columns = {column.name: column for column in table.columns}
             for property_name, property_def in schema["properties"].items():
                 column_object = None
@@ -136,7 +138,7 @@ class RedshiftConnector(SQLConnector):
                     column_object=column_object,
                 )
         else:
-            table: Table = self.create_empty_table(
+            table = self.create_empty_table(
                 table_name=table_name,
                 meta=meta,
                 schema=schema,
@@ -273,12 +275,12 @@ class RedshiftConnector(SQLConnector):
         primary_keys = primary_keys or []
         try:
             properties: dict = schema["properties"]
-        except KeyError:
+        except KeyError as e:
             msg = (
                 f"Schema for table_name: '{table_name}'"
                 f"does not define properties: {schema}"
             )
-            raise RuntimeError(msg)  # noqa: B904
+            raise RuntimeError(msg) from e
 
         for property_name, property_jsonschema in properties.items():
             is_primary_key = property_name in primary_keys
@@ -301,7 +303,7 @@ class RedshiftConnector(SQLConnector):
         cursor.execute(create_table_ddl)
         return new_table
 
-    def prepare_column(
+    def prepare_column(  # noqa: PLR0913
         self,
         full_table_name: str,
         column_name: str,
@@ -459,9 +461,12 @@ class RedshiftConnector(SQLConnector):
             )
             raise NotImplementedError(msg)
 
+        _, schema_name, table_name = self.parse_full_table_name(full_table_name)
+
         alter_column_ddl = str(
             self.get_column_alter_ddl(
-                table_name=full_table_name,
+                schema_name=schema_name,
+                table_name=table_name,
                 column_name=column_name,
                 column_type=compatible_sql_type,
             )
