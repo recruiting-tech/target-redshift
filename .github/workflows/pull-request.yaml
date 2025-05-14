@@ -1,0 +1,19 @@
+name: Pull Request
+
+on: [pull_request]
+
+concurrency:
+  group: ${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v5
+
+    - uses: cloudposse/github-action-pre-commit@v4
+      with:
+        extra_args: --config .pre-commit-config.yaml --all-files
