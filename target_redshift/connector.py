@@ -313,7 +313,6 @@ class RedshiftConnector(SQLConnector):
             cursor: a database cursor.
             column_object: a SQLAlchemy column. optional.
         """
-        column_name = column_name.lower().replace(" ", "_")
         column_exists = column_object is not None or self.column_exists(full_table_name, column_name)
 
         if not column_exists:
