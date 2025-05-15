@@ -5,7 +5,6 @@ from __future__ import annotations
 import csv
 import datetime
 import os
-import uuid
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable
 
@@ -42,7 +41,6 @@ class RedshiftSink(SQLSink):
     def __init__(self, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
         """Initialize SQL Sink. See super class for more details."""
         super().__init__(*args, **kwargs)
-        self.temp_table_name = self.generate_temp_table_name()
 
         region = self.config.get("s3_region")
         if region is None:
@@ -100,14 +98,14 @@ class RedshiftSink(SQLSink):
             )
             self.connector.grant_privileges(self.schema_name, cursor=cursor)
 
-    def generate_temp_table_name(self) -> str:
+    def generate_temp_table_name(self, context: dict) -> str:
         """Uuid temp table name."""
         # sqlalchemy.exc.IdentifierError: Identifier  # noqa: ERA001
         # 'temp_test_optional_attributes_388470e9_fbd0_47b7_a52f_d32a2ee3f5f6'
         # exceeds maximum length of 63 characters
         # Is hit if we have a long table name, there is no limit on Temporary tables
         # in postgres, used a guid just in case we are using the same session
-        return f"{str(uuid.uuid4()).replace('-', '_')}"
+        return f"{str(context['batch_id']).replace('-', '_')}"
 
     def process_batch(self, context: dict) -> None:
         """Process a batch with the given batch context.
@@ -118,6 +116,8 @@ class RedshiftSink(SQLSink):
         Args:
             context: Stream partition or context dictionary.
         """
+        self.temp_table_name = self.generate_temp_table_name(context)
+
         # If duplicates are merged, these can be tracked via
         # :meth:`~singer_sdk.Sink.tally_duplicate_merged()`.
         with self.connector.connect_cursor() as cursor:
