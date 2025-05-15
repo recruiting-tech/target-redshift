@@ -122,9 +122,23 @@ class TargetRedshift(SQLTarget):
             ),
         ),
         th.Property(
+            "s3_key_prefix_naming_convention",
+            th.StringType,
+            description=(
+                "Custom naming convention of the s3 key prefix."
+                "Replaces tokens date, stream, and timestamp with the appropriate values",
+                "Supports 'folders' in s3 keys e.g. folder/folder2/{stream}/export_date={date}/{timestamp}",
+                "Overridden by s3_key_prefix, if set",
+            ),
+            default="",
+        ),
+        th.Property(
             "s3_key_prefix",
             th.StringType,
-            description="S3 key prefix to save staging files before using COPY command",
+            description=(
+                "S3 key prefix to save staging files before using COPY command."
+                "Use s3_key_prefix_naming_convention for dynamic naming."
+            ),
             default="",
         ),
         th.Property(
