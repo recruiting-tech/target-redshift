@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import datetime
 import os
 import uuid
 from pathlib import Path
@@ -155,13 +156,33 @@ class RedshiftSink(SQLSink):
         return f's3://{self.config["s3_bucket"]}/{self.s3_key()}'
 
     def s3_key(self) -> str:
-        """Return the s3 key.
+        """Creates and returns an S3 key for the message.
 
         Returns:
             The target s3 key.
         """
-        p = Path(self.config["s3_key_prefix"]) / Path(f"{self.stream_name}-{self.temp_table_name}.csv")
-        return str(p)
+        filename = Path(f"{self.stream_name}-{self.temp_table_name}.csv")
+
+        if self.config.get("s3_key_prefix"):
+            key = Path(self.config["s3_key_prefix"]) / filename
+            return str(key)
+
+        prefix = self.config.get("s3_key_prefix_naming_convention", "")
+
+        batched_at = self._get_context({}).get("batch_start_time") or datetime.datetime.now(tz=datetime.timezone.utc)
+
+        tokens = {
+            "{stream}": self.stream_name,
+            "{timestamp}": batched_at.strftime("%Y%m%dT%H%M%S"),
+            "{date}": batched_at.strftime("%Y-%m-%d"),
+        }
+
+        for k, v in tokens.items():
+            if k in prefix:
+                prefix = prefix.replace(k, v)
+
+        key = Path(prefix) / filename
+        return str(key)
 
     def bulk_insert_records(  # type: ignore[override]
         self,
