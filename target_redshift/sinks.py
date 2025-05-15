@@ -174,7 +174,7 @@ class RedshiftSink(SQLSink):
         tokens = {
             "{stream}": self.stream_name,
             "{timestamp}": batched_at.strftime("%Y%m%dT%H%M%S"),
-            "{date}": batched_at.strftime("%Y-%m-%d"),
+            "{date}": batched_at.strftime("%Y%m%d"),
         }
 
         for k, v in tokens.items():
