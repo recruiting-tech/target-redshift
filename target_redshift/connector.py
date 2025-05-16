@@ -56,10 +56,6 @@ class RedshiftConnector(SQLConnector):
         for grantee in self.config.get("grants", []):
             cursor.execute(f"grant usage on schema {schema_name} to {grantee};")
             cursor.execute(f"grant select on all tables in schema {schema_name} to {grantee};")
-            cursor.execute(
-                f"alter default privileges for user {self.config['user']} "
-                f"in schema {schema_name} grant select on tables to {grantee};"
-            )
 
     def create_schema(self, schema_name: str, cursor: Cursor) -> None:
         """Create target schema.
