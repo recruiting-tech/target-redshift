@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import datetime
 import os
+import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable
 
@@ -400,3 +401,23 @@ class RedshiftSink(SQLSink):
                 _ = self.s3_client.delete_object(Bucket=self.config["s3_bucket"], Key=self.s3_key())
             except ClientError:
                 self.logger.exception()
+
+    def _add_sdc_metadata_to_record(
+        self,
+        record: dict,
+        message: dict,
+        context: dict,
+    ) -> None:
+        """Populate metadata _sdc columns from incoming record message.
+
+        Record metadata specs documented at:
+        https://sdk.meltano.com/en/latest/implementation/record_metadata.html
+
+        Args:
+            record: Individual record in the stream.
+            message: The record message.
+            context: Stream partition or context dictionary.
+        """
+        super()._add_sdc_metadata_to_record(record, message, context)
+
+        record["_sdc_sequence"] = time.time_ns()
