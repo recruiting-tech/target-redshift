@@ -11,6 +11,7 @@ import redshift_connector
 from redshift_connector import Cursor
 from singer_sdk.connectors import SQLConnector
 from singer_sdk.helpers._typing import get_datelike_property_type
+from singer_sdk.helpers.capabilities import TargetLoadMethods
 from singer_sdk.typing import _jsonschema_type_check
 from sqlalchemy import DDL, Column, MetaData, Table
 from sqlalchemy.engine.url import URL
@@ -94,7 +95,7 @@ class RedshiftConnector(SQLConnector):
                 yield cursor
             connection.commit()
 
-    def prepare_table(  # type: ignore[override]  # noqa: D417, PLR0913
+    def prepare_table(  # type: ignore[override]  # noqa: PLR0913
         self,
         full_table_name: str,
         schema: dict,
@@ -108,42 +109,37 @@ class RedshiftConnector(SQLConnector):
             full_table_name: the target table name.
             schema: the JSON Schema for the table.
             primary_keys: list of key properties.
-            connection: the database connection.
+            cursor: the database cursor.
             as_temp_table: True to create a temp table.
-
-        Returns:
-            The table object.
         """
-        _, schema_name, table_name = self.parse_full_table_name(full_table_name)
-        meta = MetaData(schema=schema_name)
-
-        table: Table
-
-        if self.table_exists(full_table_name=full_table_name):
-            table = self.get_table(full_table_name=full_table_name)
-            columns = {column.name: column for column in table.columns}
-            for property_name, property_def in schema["properties"].items():
-                column_object = None
-                if property_name in columns:
-                    column_object = columns[property_name]
-                self.prepare_column(
-                    full_table_name=table.fullname,
-                    column_name=property_name,
-                    sql_type=self.to_sql_type(property_def),
-                    cursor=cursor,
-                    column_object=column_object,
-                )
-        else:
-            table = self.create_empty_table(
-                table_name=table_name,
-                meta=meta,
+        if not self.table_exists(full_table_name=full_table_name):
+            return self.create_empty_table(
+                full_table_name=full_table_name,
                 schema=schema,
                 primary_keys=primary_keys,
                 as_temp_table=as_temp_table,
                 cursor=cursor,
             )
 
-        return table
+        if self.config["load_method"] == TargetLoadMethods.OVERWRITE:
+            self.get_table(full_table_name=full_table_name).drop(self._engine)
+            return self.create_empty_table(
+                full_table_name=full_table_name,
+                schema=schema,
+                primary_keys=primary_keys,
+                as_temp_table=as_temp_table,
+                cursor=cursor,
+            )
+
+        for property_name, property_def in schema["properties"].items():
+            self.prepare_column(
+                full_table_name,
+                property_name,
+                self.to_sql_type(property_def),
+                cursor,
+            )
+
+        return self.get_table(full_table_name=full_table_name)
 
     def get_table(
         self,
@@ -238,10 +234,9 @@ class RedshiftConnector(SQLConnector):
 
         return VARCHAR(self.default_varchar_length)
 
-    def create_empty_table(  # type: ignore[override]  # noqa: PLR0913
+    def create_empty_table(  # noqa: PLR0913
         self,
-        table_name: str,
-        meta: MetaData,
+        full_table_name: str,
         schema: dict,
         cursor: Cursor,
         primary_keys: t.Sequence[str] | None = None,
@@ -250,12 +245,10 @@ class RedshiftConnector(SQLConnector):
         """Create an empty target table.
 
         Args:
-            table_name: the target table name.
-            meta: the SQLAchemy metadata object.
+            full_table_name: the target table name.
             schema: the JSON schema for the new table.
             cursor: the database cursor.
             primary_keys: list of key properties.
-            partition_keys: list of partition keys.
             as_temp_table: True to create a temp table.
 
         Returns:
@@ -265,12 +258,14 @@ class RedshiftConnector(SQLConnector):
             NotImplementedError: if temp tables are unsupported and as_temp_table=True.
             RuntimeError: if a variant schema is passed with no properties defined.
         """
+        _, schema_name, table_name = self.parse_full_table_name(full_table_name)
+        meta = MetaData(schema=schema_name)
         columns: list[Column] = []
         primary_keys = primary_keys or []
         try:
             properties: dict = schema["properties"]
         except KeyError as e:
-            msg = f"Schema for table_name: '{table_name}'" f"does not define properties: {schema}"
+            msg = f"Schema for '{full_table_name}' does not define properties: {schema}"
             raise RuntimeError(msg) from e
 
         for property_name, property_jsonschema in properties.items():
