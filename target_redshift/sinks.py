@@ -323,6 +323,7 @@ class RedshiftSink(SQLSink):
                 extrasaction="ignore",
                 dialect="excel",
             )
+            writer.writeheader()
             writer.writerows(records)
 
     def copy_to_redshift(self, table: sqlalchemy.Table, cursor: Cursor) -> None:
@@ -335,7 +336,7 @@ class RedshiftSink(SQLSink):
             """
             EMPTYASNULL BLANKSASNULL TRIMBLANKS TRUNCATECOLUMNS
             DATEFORMAT 'auto' TIMEFORMAT 'auto'
-            COMPUPDATE OFF STATUPDATE OFF
+            COMPUPDATE OFF STATUPDATE OFF IGNOREHEADER 1
         """,
         )
         columns = ", ".join([f'"{column}"' for column in self.conformed_schema["properties"]])
