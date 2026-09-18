@@ -42,7 +42,7 @@ class JSONSchemaToRedshift(JSONSchemaToSQL):
             max_varchar_length: The absolute maximum length for VARCHAR columns that
                 the database supports.
         """
-        super.__init__(max_varchar_length=max_varchar_length)
+        super().__init__(max_varchar_length=max_varchar_length)
         self.register_format_handler("singer-decimal", self._handle_singer_decimal)
 
     def handle_multiple_types(self, types: Sequence[str]) -> TypeEngine:
