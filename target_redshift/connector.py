@@ -2,28 +2,52 @@
 
 from __future__ import annotations
 
+import sys
 import typing as t
 from contextlib import contextmanager
-from typing import cast
+from functools import cached_property
+from typing import TYPE_CHECKING, cast
 
 import boto3
 import redshift_connector
 from redshift_connector import Cursor
-from singer_sdk.connectors import SQLConnector
-from singer_sdk.helpers._typing import get_datelike_property_type
+from singer_sdk.connectors import JSONSchemaToSQL, SQLConnector
 from singer_sdk.helpers.capabilities import TargetLoadMethods
-from singer_sdk.typing import _jsonschema_type_check
 from sqlalchemy import DDL, Column, MetaData, Table
 from sqlalchemy.engine.url import URL
 from sqlalchemy.schema import CreateSchema, CreateTable, DropTable
-from sqlalchemy.types import (
-    BOOLEAN,
-    DATE,
-    DATETIME,
-    TIME,
-    TypeEngine,
-)
-from sqlalchemy_redshift.dialect import BIGINT, DOUBLE_PRECISION, SUPER, VARCHAR
+from sqlalchemy_redshift.dialect import BIGINT, DOUBLE_PRECISION, SUPER
+
+if sys.version_info >= (3, 12):
+    pass
+else:
+    pass
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from sqlalchemy.types import TypeEngine
+
+
+class JSONSchemaToRedshift(JSONSchemaToSQL):
+    """A configurable mapper for converting JSON Schema types to SQLAlchemy types.
+
+    This class provides a mapping from JSON Schema types to SQLAlchemy types.
+    """
+
+    def handle_multiple_types(self, types: Sequence[str]) -> TypeEngine:
+        """Handle multiple types by returning SUPER for semi-structured data or VARCHAR otherwise.
+
+        Args:
+            types: The list of types to handle.
+
+        Returns:
+            A type.
+        """
+        if "object" in types or "array" in types:
+            return SUPER()
+
+        return super().handle_multiple_types(types)
 
 
 class RedshiftConnector(SQLConnector):
@@ -34,7 +58,9 @@ class RedshiftConnector(SQLConnector):
     allow_column_alter: bool = False  # Whether altering column types is supported.
     allow_merge_upsert: bool = True  # Whether MERGE UPSERT is supported.
     allow_temp_tables: bool = True  # Whether temp tables are supported.
-    default_varchar_length = 10000
+
+    max_varchar_length = 10_000
+    jsonschema_to_sql_converter = JSONSchemaToRedshift
 
     def prepare_schema(self, schema_name: str, cursor: Cursor) -> None:
         """Create the target database schema.
@@ -202,37 +228,18 @@ class RedshiftConnector(SQLConnector):
         drop_table_ddl = str(DropTable(table).compile(dialect=self._engine.dialect))
         cursor.execute(drop_table_ddl)
 
-    def to_sql_type(self, jsonschema_type: dict) -> TypeEngine:  # noqa: PLR0911
-        """Convert JSON Schema type to a SQL type.
+    @cached_property
+    def jsonschema_to_sql(self) -> JSONSchemaToSQL:
+        """The JSON-to-SQL type mapper object for this SQL connector.
 
-        Args:
-            jsonschema_type: The JSON Schema object.
-
-        Returns:
-            The SQL type.
+        Override this property to provide a custom mapping for your SQL dialect.
         """
-        if _jsonschema_type_check(jsonschema_type, ("string",)):
-            datelike_type = get_datelike_property_type(jsonschema_type)
-            if datelike_type:
-                if datelike_type == "date-time":
-                    return DATETIME()
-                if datelike_type in "time":
-                    return TIME()
-                if datelike_type == "date":
-                    return DATE()
-            return VARCHAR(self.default_varchar_length)
-
-        if _jsonschema_type_check(jsonschema_type, ("integer",)):
-            return BIGINT()
-        if _jsonschema_type_check(jsonschema_type, ("number",)):
-            return DOUBLE_PRECISION()
-        if _jsonschema_type_check(jsonschema_type, ("boolean",)):
-            return BOOLEAN()
-
-        if _jsonschema_type_check(jsonschema_type, ("object", "array")):
-            return SUPER()
-
-        return VARCHAR(self.default_varchar_length)
+        to_sql = super().jsonschema_to_sql
+        to_sql.register_type_handler("integer", BIGINT)
+        to_sql.register_type_handler("object", SUPER)
+        to_sql.register_type_handler("array", SUPER)
+        to_sql.register_type_handler("number", DOUBLE_PRECISION)
+        return to_sql
 
     def create_empty_table(  # noqa: PLR0913
         self,
