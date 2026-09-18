@@ -11,8 +11,8 @@ from typing import TYPE_CHECKING, cast
 import boto3
 import redshift_connector
 from redshift_connector import Cursor
-from singer_sdk.connectors import JSONSchemaToSQL, SQLConnector
 from singer_sdk.helpers.capabilities import TargetLoadMethods
+from singer_sdk.sql.connector import JSONSchemaToSQL, SQLConnector
 from sqlalchemy import DDL, Column, MetaData, Table
 from sqlalchemy.engine.url import URL
 from sqlalchemy.schema import CreateSchema, CreateTable, DropTable
