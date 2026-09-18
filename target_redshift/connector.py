@@ -35,6 +35,16 @@ class JSONSchemaToRedshift(JSONSchemaToSQL):
     This class provides a mapping from JSON Schema types to SQLAlchemy types.
     """
 
+    def __init__(self, *, max_varchar_length: int | None = None) -> None:
+        """Initialize the mapper with default type mappings.
+
+        Args:
+            max_varchar_length: The absolute maximum length for VARCHAR columns that
+                the database supports.
+        """
+        super.__init__(max_varchar_length=max_varchar_length)
+        self.register_format_handler("singer-decimal", self._handle_singer_decimal)
+
     def handle_multiple_types(self, types: Sequence[str]) -> TypeEngine:
         """Handle multiple types by returning SUPER for semi-structured data or VARCHAR otherwise.
 
