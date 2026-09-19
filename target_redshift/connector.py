@@ -43,7 +43,7 @@ class JSONSchemaToRedshift(JSONSchemaToSQL):
                 the database supports.
         """
         super().__init__(max_varchar_length=max_varchar_length)
-        self.register_format_handler("singer-decimal", self._handle_singer_decimal)
+        self.register_format_handler("singer.decimal", self._handle_singer_decimal)
 
     def handle_multiple_types(self, types: Sequence[str]) -> TypeEngine:
         """Handle multiple types by returning SUPER for semi-structured data or VARCHAR otherwise.
