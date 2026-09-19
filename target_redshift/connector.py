@@ -45,6 +45,21 @@ class JSONSchemaToRedshift(JSONSchemaToSQL):
         super().__init__(max_varchar_length=max_varchar_length)
         self.register_format_handler("singer.decimal", self._handle_singer_decimal)
 
+    def _get_type_from_schema(self, schema: dict) -> TypeEngine | None:
+        """Try to get a SQL type from a single schema object.
+
+        Args:
+            schema: The JSON Schema object.
+
+        Returns:
+            SQL type if one can be determined, None otherwise.
+        """
+        if "string" in schema.get("type", "") and "format" in schema:  # noqa: SIM102
+            if (format_type := self._handle_format(schema)) is not None:
+                return format_type
+
+        return super()._get_type_from_schema(schema)
+
     def handle_multiple_types(self, types: Sequence[str]) -> TypeEngine:
         """Handle multiple types by returning SUPER for semi-structured data or VARCHAR otherwise.
 
