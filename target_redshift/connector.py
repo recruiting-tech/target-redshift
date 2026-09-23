@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sys
 import typing as t
 from contextlib import contextmanager
 from functools import cached_property
