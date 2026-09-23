@@ -18,11 +18,6 @@ from sqlalchemy.engine.url import URL
 from sqlalchemy.schema import CreateSchema, CreateTable, DropTable
 from sqlalchemy_redshift.dialect import BIGINT, DOUBLE_PRECISION, SUPER
 
-if sys.version_info >= (3, 12):
-    pass
-else:
-    pass
-
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
